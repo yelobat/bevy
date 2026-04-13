@@ -751,6 +751,11 @@ impl RemotePlugin {
             to_main,
         )
         .with_method(
+            builtin_methods::BRP_REMOVE_ALL_WITH_COMPONENTS,
+            builtin_methods::process_remote_remove_all_with_components_request,
+            to_main,
+        )
+        .with_method(
             builtin_methods::BRP_LIST_RESOURCES_METHOD,
             builtin_methods::process_remote_list_resources_request,
             to_main,

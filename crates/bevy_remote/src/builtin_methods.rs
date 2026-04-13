@@ -65,6 +65,9 @@ pub const BRP_LIST_COMPONENTS_METHOD: &str = "world.list_components";
 /// The method path for a `world.mutate_components` request.
 pub const BRP_MUTATE_COMPONENTS_METHOD: &str = "world.mutate_components";
 
+/// The method path for a `world.remove_all_with_components` request.
+pub const BRP_REMOVE_ALL_WITH_COMPONENTS: &str = "world.remove_all_with_components";
+
 /// The method path for a `world.get_components+watch` request.
 pub const BRP_GET_COMPONENTS_AND_WATCH_METHOD: &str = "world.get_components+watch";
 
@@ -293,6 +296,15 @@ pub struct BrpMutateComponentsParams {
 
     /// The value to insert at `path`.
     pub value: Value,
+}
+
+/// `world.remove_all_with_components`:
+///
+/// The server responds with a null.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct BrpRemoveAllWithComponents {
+    /// The components for which to remove entities with.
+    pub components: Vec<String>,
 }
 
 /// `world.mutate_resources`:
@@ -1195,6 +1207,41 @@ pub fn process_remote_mutate_components_request(
         .map_err(BrpError::component_error)?
         .try_apply(value.as_ref())
         .map_err(BrpError::component_error)?;
+
+    Ok(Value::Null)
+}
+
+/// Handles a `world.remove_all_with_components` request coming from a client.
+pub fn process_remote_remove_all_with_components_request(
+    In(params): In<Option<Value>>,
+    world: &mut World,
+) -> BrpResult {
+    let BrpRemoveAllWithComponents { components } = parse_some(params)?;
+
+    let app_type_registry = world.resource::<AppTypeRegistry>().clone();
+    let type_registry = app_type_registry.read();
+
+    // Get the filtered components
+    let (filtered_components, _) =
+        get_component_ids(&type_registry, world, components.clone(), false)
+            .map_err(BrpError::component_error)?;
+
+    let mut query = QueryBuilder::<FilteredEntityRef>::new(world);
+    for (_, component) in &filtered_components {
+        query.ref_id(*component);
+    }
+
+    let mut query = query.build();
+
+    let mut entities: Vec<Entity> = Vec::new();
+    for row in query.iter_mut(world) {
+        let entity_id = row.id();
+        entities.push(entity_id);
+    }
+
+    for entity in entities {
+        get_entity_mut(world, entity)?.despawn();
+    }
 
     Ok(Value::Null)
 }

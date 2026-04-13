@@ -4852,6 +4852,18 @@ category = "Remote Protocol"
 wasm = false
 
 [[example]]
+name = "test"
+path = "examples/remote/test.rs"
+doc-scrape-examples = true
+required-features = ["bevy_remote"]
+
+[package.metadata.example.test]
+name = "test"
+description = "Testing the new `world.remove_all_with_components` method via BRP"
+category = "Remote Protocol"
+wasm = false
+
+[[example]]
 name = "server"
 path = "examples/remote/server.rs"
 doc-scrape-examples = true
